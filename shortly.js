@@ -19,6 +19,8 @@ app.configure(function() {
   app.use(express.static(__dirname + '/public'));
 });
 
+// auth();
+
 app.get('/', function(req, res) {
   res.render('index');
 });
@@ -27,11 +29,38 @@ app.get('/create', function(req, res) {
   res.render('index');
 });
 
+app.get('/login', function(req, res){
+  res.render('login');
+});
+
+app.get('/signup', function(req, res){
+  res.render('signup');
+});
+
 app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
+  });
+});
+
+app.post('/login', function(req, res){
+
+});
+
+app.post('/signup', function(req, res){
+  var usr = req.body;
+  var user = new User({
+    username: usr.username,
+    password: usr.password
+  });
+
+
+  user.save().then(function(newUser) {
+    Users.add(newUser);
+    res.send(200, newUser);
   })
 });
+
 
 app.post('/links', function(req, res) {
   var uri = req.body.url;
@@ -70,7 +99,10 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-
+var auth = function(session){
+  //check to see if user is logged in
+    //if not return to login page
+};
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
