@@ -11,22 +11,36 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+var store = new express.session.MemoryStore;
+
 app.configure(function() {
   app.set('views', __dirname + '/views');
   app.set('view engine', 'ejs');
   app.use(partials());
-  app.use(express.bodyParser())
+  app.use(express.bodyParser());
   app.use(express.static(__dirname + '/public'));
+  app.use(express.cookieParser());
+  app.use(express.session({secret: 'test', store: store}));
 });
 
-// auth();
+var auth = function(req){
+  return !req.session.username ? undefined : req.session.username;
+};
 
 app.get('/', function(req, res) {
-  res.render('index');
+  if(auth(req)){
+    res.render('index');
+  } else {
+    res.render('login');
+  }
 });
 
 app.get('/create', function(req, res) {
-  res.render('index');
+  if(auth(req)){
+    res.render('index');
+  } else {
+    res.render('login');
+  }
 });
 
 app.get('/login', function(req, res){
@@ -37,14 +51,36 @@ app.get('/signup', function(req, res){
   res.render('signup');
 });
 
+app.get('/logout', function(req, res){
+  req.session.destroy();
+  res.render('login');
+});
+
+
 app.get('/links', function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
-  });
+  if(auth(req)){
+    Links.reset().fetch().then(function(links) {
+      res.send(200, links.models);
+    });
+  } else {
+    res.send(404, 'unauthorized!');
+  }
 });
 
 app.post('/login', function(req, res){
-
+  var usr = req.body;
+  new User({username: usr.username}).fetch().then(function(user){
+    if(user){
+      if(user.checkPassword(usr.password)){
+        req.session.username = user.get('username');
+        res.render('index');
+      } else {
+        res.render('login');
+      }
+    } else {
+      res.render('signup');
+    }
+  });
 });
 
 app.post('/signup', function(req, res){
@@ -53,12 +89,12 @@ app.post('/signup', function(req, res){
     username: usr.username,
     password: usr.password
   });
-
-
+  // CHECK TO SEE IF USER EXISTS
   user.save().then(function(newUser) {
     Users.add(newUser);
-    res.send(200, newUser);
-  })
+    // res.send(200, newUser);
+    res.render('index');
+  });
 });
 
 
@@ -99,10 +135,6 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-var auth = function(session){
-  //check to see if user is logged in
-    //if not return to login page
-};
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail

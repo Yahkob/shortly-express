@@ -7,25 +7,22 @@ var User = db.Model.extend({
   hasTimestamps: true,
 
   checkPassword: function(pass) {
-    // check this user's password
-    var saltedPass = pass + model.get('salt');
-    var hash = bcrypt.hashSync(saltedPass);
-    return (hash === model.get('password'));
+    var salt = this.get('salt');
+    var hash = bcrypt.hashSync(pass, salt);
+    return (hash === this.get('password'));
   },
 
-  hashPassword: function(model){
-    var pass = model.get('password');
-    var salt = Math.random().toString().substring(2);
-    model.set('salt', salt);
-
-    var saltedPass = pass + salt;
-    var hash = bcrypt.hashSync(saltedPass);
-    model.set('password', hash);
+  hashPassword: function(){
+    var pass = this.get('password');
+    var salt = bcrypt.genSaltSync();
+    this.set('salt', salt);
+    var hash = bcrypt.hashSync(pass, salt);
+    this.set('password', hash);
   },
 
   initialize: function(){
     this.on('creating', function(model, attrs, options){
-      this.hashPassword(model);
+      this.hashPassword();
     });
   }
 
